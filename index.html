@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTC Quiz – Light</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Righteous&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+:root {
+  --blue:   #4361EE;
+  --orange: #FF6B35;
+  --lime:   #C8FF00;
+  --pink:   #FF3D8A;
+  --white:  #FFFFFF;
+  --off:    #F5F4FF;
+  --dark:   #111118;
+  --grey:   #6B6B80;
+  --light:  #EDEDF7;
+  --green:  #25D366;
+}
+ 
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--off);
+  background-image: repeating-linear-gradient(-45deg, transparent, transparent 18px, rgba(67,97,238,0.045) 18px, rgba(67,97,238,0.045) 19px);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+ 
+#adOverlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.6s ease;
+}
+ 
+.stage {
+  --rust:   #E8522A; --rust2:  #FF7043; --cream:  #FFF8F3; --yellow: #FFD93D;
+  --blue:   #4CC9F0; --green:  #06D6A0; --pink:   #FF6B9D; --purple: #A78BFA; --dark:   #2D2A26;
+  width: 360px; height: 640px; position: relative; overflow: hidden;
+  background: var(--cream); border-radius: 32px;
+  box-shadow: 0 0 0 4px #fff, 0 0 0 8px var(--rust), 0 30px 80px rgba(232,82,42,.3), 0 50px 120px rgba(0,0,0,.2);
+}
+ 
+canvas#particles { position: absolute; inset: 0; z-index: 60; pointer-events: none; border-radius: 32px; }
+.scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; z-index: 10; }
+.scene.active { opacity: 1; pointer-events: auto; }
+ 
+.s0 { background: var(--yellow); overflow: hidden; }
+.s0 .dots-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,.55) 2px, transparent 2px); background-size: 28px 28px; }
+.hey-emoji { font-size: 72px; opacity: 0; transform: scale(0) rotate(-20deg); position: relative; z-index: 2; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+.s0.active .hey-emoji { animation: bounceIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s forwards; }
+.hey-text { font-family: 'Fredoka One', cursive; font-size: 80px; line-height: 1; color: var(--dark); text-align: center; position: relative; z-index: 2; opacity: 0; transform: translateY(30px); text-shadow: 0 5px 0 rgba(0,0,0,.1); }
+.s0.active .hey-text { animation: adSlideUp 0.35s ease 0.35s forwards; }
+.hey-sub { font-size: 18px; font-weight: 800; color: var(--rust); letter-spacing: 1px; position: relative; z-index: 2; opacity: 0; transform: translateY(15px); margin-top: 10px; }
+.s0.active .hey-sub { animation: adSlideUp 0.3s ease 0.6s forwards; }
+.pill-row { display: flex; gap: 8px; position: relative; z-index: 2; margin-top: 20px; opacity: 0; }
+.s0.active .pill-row { animation: adFadeIn 0.3s ease 0.85s forwards; }
+.pill { background: #fff; border-radius: 50px; padding: 6px 14px; font-size: 12px; font-weight: 800; color: var(--dark); box-shadow: 0 3px 0 rgba(0,0,0,.1); }
+ 
+.s1 { background: var(--cream); overflow: hidden; }
+.s1::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(232,82,42,.08) 0%, transparent 70%); }
+.cd-ring { width: 220px; height: 220px; border-radius: 50%; border: 8px solid rgba(232,82,42,.15); display: flex; align-items: center; justify-content: center; position: absolute; }
+.cd-ring-inner { width: 170px; height: 170px; border-radius: 50%; background: var(--rust); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 0 #b33d1c, 0 12px 30px rgba(232,82,42,.4); opacity: 0; transform: scale(0); }
+.s1.active .cd-ring-inner { animation: popBounce 0.3s cubic-bezier(0.175,0.885,0.32,1.275) 0.05s forwards; }
+.cd-num { font-family: 'Fredoka One', cursive; font-size: 110px; color: #fff; line-height: 1; position: relative; z-index: 2; text-shadow: 0 4px 0 rgba(0,0,0,.2); }
+.cd-label { font-size: 14px; font-weight: 800; color: var(--rust); letter-spacing: 4px; text-transform: uppercase; position: absolute; bottom: 130px; opacity: 0; }
+.s1.active .cd-label { animation: adFadeIn 0.3s ease 0.3s forwards; }
+ 
+.s2 { background: var(--cream); overflow: hidden; }
+.s2 .burst-bg { position: absolute; inset: 0; background: conic-gradient(from 0deg,#FFD93D 0deg 30deg,transparent 30deg 60deg,#FFD93D 60deg 90deg,transparent 90deg 120deg,#FFD93D 120deg 150deg,transparent 150deg 180deg,#FFD93D 180deg 210deg,transparent 210deg 240deg,#FFD93D 240deg 270deg,transparent 270deg 300deg,#FFD93D 300deg 330deg,transparent 330deg 360deg); opacity: 0; transform: scale(0); border-radius: 50%; width: 600px; height: 600px; top: 50%; left: 50%; margin: -300px 0 0 -300px; }
+.s2.active .burst-bg { animation: burstExpand 0.5s ease 0s forwards; }
+.s2 .logo-ring { width: 100px; height: 100px; border-radius: 50%; background: var(--rust); display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 0 #b33d1c, 0 10px 24px rgba(232,82,42,.35); margin-bottom: 16px; position: relative; z-index: 2; opacity: 0; transform: scale(0) rotate(-180deg); }
+.s2.active .logo-ring { animation: spinIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) 0.15s forwards; }
+.s2 .logo-ring img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.big-ttc { font-family: 'Fredoka One', cursive; font-size: 100px; line-height: .95; color: var(--rust); text-align: center; position: relative; z-index: 2; opacity: 0; transform: scale(0.4) rotate(-6deg); text-shadow: 0 6px 0 #b33d1c; letter-spacing: -2px; }
+.s2.active .big-ttc { animation: blastIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 0.25s forwards; }
+.big-quiz { font-family: 'Fredoka One', cursive; font-size: 86px; line-height: .95; color: var(--dark); text-align: center; position: relative; z-index: 2; opacity: 0; transform: scale(0.4) rotate(6deg); text-shadow: 0 5px 0 rgba(0,0,0,.15); }
+.s2.active .big-quiz { animation: blastIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 0.38s forwards; }
+.v2-tag { background: var(--green); color: #fff; font-size: 12px; font-weight: 900; letter-spacing: 2px; padding: 6px 18px; border-radius: 50px; position: relative; z-index: 2; margin-top: 14px; box-shadow: 0 4px 0 #04a87e; opacity: 0; transform: translateY(15px); }
+.s2.active .v2-tag { animation: adSlideUp 0.3s ease 0.6s forwards; }
+ 
+.s3 { background: var(--cream); padding: 30px 22px; justify-content: flex-start; padding-top: 60px; }
+.s3 .feat-title { font-family: 'Fredoka One', cursive; font-size: 28px; color: var(--dark); text-align: center; margin-bottom: 18px; opacity: 0; }
+.s3.active .feat-title { animation: adFadeIn 0.25s ease 0.05s forwards; }
+.feat-list { display: flex; flex-direction: column; gap: 11px; width: 100%; }
+.fcard { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-radius: 18px; opacity: 0; transform: translateX(-50px) scale(.95); position: relative; overflow: hidden; }
+.fcard::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.25); border-radius: 18px; }
+.fcard.c1 { background: #FFE8E0; box-shadow: 0 4px 0 rgba(232,82,42,.25); }
+.fcard.c2 { background: #E8F8FF; box-shadow: 0 4px 0 rgba(76,201,240,.25); }
+.fcard.c3 { background: #E8FFF8; box-shadow: 0 4px 0 rgba(6,214,160,.25); }
+.fcard.c4 { background: #FFF5E0; box-shadow: 0 4px 0 rgba(255,217,61,.4); }
+.s3.active .fcard:nth-child(1) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.15s forwards; }
+.s3.active .fcard:nth-child(2) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.3s forwards; }
+.s3.active .fcard:nth-child(3) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.45s forwards; }
+.s3.active .fcard:nth-child(4) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.6s forwards; }
+.fcard .ficon { font-size: 32px; flex-shrink: 0; position: relative; z-index: 1; }
+.fcard .finfo { flex: 1; position: relative; z-index: 1; }
+.fcard .finfo .flabel { font-size: 11px; font-weight: 700; color: rgba(45,42,38,.4); text-transform: uppercase; letter-spacing: 1px; }
+.fcard .finfo .fval { font-size: 16px; font-weight: 900; color: var(--dark); margin-top: 1px; }
+.fcard .fbadge { font-size: 10px; font-weight: 900; letter-spacing: 1px; padding: 4px 10px; border-radius: 50px; position: relative; z-index: 1; }
+.fbadge.new { background: var(--rust); color: #fff; }
+.fbadge.v2  { background: var(--green); color: #fff; }
+ 
+.s4 { background: var(--rust); overflow: hidden; }
+.s4 .confetti-bg { position: absolute; inset: 0; background-image: radial-gradient(circle,rgba(255,255,255,.12) 3px,transparent 3px), radial-gradient(circle,rgba(255,217,61,.25) 2px,transparent 2px); background-size: 40px 40px, 25px 25px; background-position: 0 0, 12px 12px; }
+.s4 .zigzag { position: absolute; top: 0; left: 0; right: 0; height: 30px; background: var(--cream); clip-path: polygon(0 0,5% 100%,10% 0,15% 100%,20% 0,25% 100%,30% 0,35% 100%,40% 0,45% 100%,50% 0,55% 100%,60% 0,65% 100%,70% 0,75% 100%,80% 0,85% 100%,90% 0,95% 100%,100% 0,100% 0,0 0); }
+.s4 .zigzag-bot { position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: var(--cream); clip-path: polygon(0 100%,5% 0,10% 100%,15% 0,20% 100%,25% 0,30% 100%,35% 0,40% 100%,45% 0,50% 100%,55% 0,60% 100%,65% 0,70% 100%,75% 0,80% 100%,85% 0,90% 100%,95% 0,100% 100%,100% 100%,0 100%); }
+.update-badge { background: var(--yellow); color: var(--dark); font-size: 11px; font-weight: 900; letter-spacing: 3px; padding: 7px 20px; border-radius: 50px; position: relative; z-index: 2; box-shadow: 0 4px 0 rgba(0,0,0,.15); opacity: 0; transform: scale(0); }
+.s4.active .update-badge { animation: popBounce 0.3s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s forwards; }
+.update-headline { font-family: 'Fredoka One', cursive; font-size: 62px; line-height: 1; color: #fff; text-align: center; text-shadow: 0 5px 0 rgba(0,0,0,.2); position: relative; z-index: 2; margin-top: 16px; opacity: 0; transform: scale(0.7); }
+.s4.active .update-headline { animation: popBounce 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 0.28s forwards; }
+.update-items { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; position: relative; z-index: 2; width: 85%; }
+.uitem { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.22); border-radius: 14px; padding: 11px 16px; opacity: 0; transform: translateY(20px); }
+.uitem .uicon { font-size: 22px; }
+.uitem .utxt { font-size: 14px; font-weight: 800; color: #fff; }
+.s4.active .uitem:nth-child(1) { animation: adSlideUp 0.25s ease 0.6s forwards; }
+.s4.active .uitem:nth-child(2) { animation: adSlideUp 0.25s ease 0.75s forwards; }
+.s4.active .uitem:nth-child(3) { animation: adSlideUp 0.25s ease 0.9s forwards; }
+ 
+.s5 { background: var(--cream); overflow: hidden; }
+.s5 .top-wave { position: absolute; top: 0; left: 0; right: 0; height: 200px; background: var(--yellow); clip-path: ellipse(55% 60% at 50% 0%); }
+.stars-row { display: flex; gap: 6px; margin-bottom: 16px; position: relative; z-index: 2; opacity: 0; }
+.s5.active .stars-row { animation: adFadeIn 0.3s ease 0.1s forwards; }
+.stars-row span { font-size: 28px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.1)); }
+.cta-logo-wrap { position: relative; z-index: 2; opacity: 0; transform: scale(0) rotate(-360deg); margin-bottom: 14px; }
+.s5.active .cta-logo-wrap { animation: spinIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) 0.2s forwards; }
+.cta-logo-wrap img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 6px 0 var(--rust), 0 12px 24px rgba(232,82,42,.3); }
+.cta-main-title { font-family: 'Fredoka One', cursive; font-size: 72px; line-height: 1; color: var(--dark); text-align: center; position: relative; z-index: 2; opacity: 0; transform: translateY(25px); letter-spacing: -1px; }
+.cta-main-title span { color: var(--rust); }
+.s5.active .cta-main-title { animation: adSlideUp 0.3s ease 0.45s forwards; }
+.cta-subtitle { font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 900; color: rgba(45,42,38,.55); text-align: center; position: relative; z-index: 2; opacity: 0; transform: translateY(10px); margin-top: 4px; letter-spacing: 0.5px; }
+.s5.active .cta-subtitle { animation: adSlideUp 0.3s ease 0.65s forwards; }
+.tag-row { display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 2; opacity: 0; }
+.s5.active .tag-row { animation: adFadeIn 0.3s ease 0.75s forwards; }
+.tag { font-size: 11px; font-weight: 900; letter-spacing: 1px; padding: 6px 14px; border-radius: 50px; box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+.tag.t1 { background: var(--blue); color: #fff; }
+.tag.t2 { background: var(--green); color: #fff; }
+.tag.t3 { background: var(--pink); color: #fff; }
+.play-btn { margin-top: 22px; background: var(--rust); color: #fff; font-family: 'Fredoka One', cursive; font-size: 22px; letter-spacing: 1px; padding: 18px 48px; border-radius: 18px; border: none; cursor: pointer; box-shadow: 0 7px 0 #b33d1c, 0 12px 24px rgba(232,82,42,.3); position: relative; z-index: 2; opacity: 0; transform: translateY(20px) scale(.9); transition: transform 0.1s, box-shadow 0.1s; overflow: hidden; }
+.play-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent); animation: adShimmer 2s linear 1.2s infinite; }
+.s5.active .play-btn { animation: adSlideUp 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 1s forwards, btnPulse 1.8s ease 1.5s infinite; }
+.play-btn:hover { transform: translateY(-2px) scale(1.03) !important; box-shadow: 0 10px 0 #b33d1c, 0 16px 30px rgba(232,82,42,.35) !important; }
+.play-btn:active { transform: translateY(5px) scale(.98) !important; box-shadow: 0 2px 0 #b33d1c !important; }
+.cta-tagline { font-size: 11px; font-weight: 700; color: rgba(45,42,38,.35); text-align: center; margin-top: 14px; letter-spacing: 1px; position: relative; z-index: 2; opacity: 0; }
+.s5.active .cta-tagline { animation: adFadeIn 0.3s ease 1.3s forwards; }
+ 
+.scene-dots { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 200; }
+.sdot { width: 6px; height: 6px; border-radius: 50%; background: rgba(45,42,38,.15); transition: all 0.3s; }
+.sdot.on { background: var(--rust); width: 20px; border-radius: 3px; }
+ 
+.prog-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 5px; background: rgba(45,42,38,.06); z-index: 300; border-radius: 0 0 32px 32px; overflow: hidden; }
+.prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--rust), var(--yellow)); border-radius: 0 0 32px 32px; box-shadow: 0 0 8px rgba(232,82,42,.5); }
+ 
+.replay-btn { position: absolute; bottom: 14px; right: 14px; background: var(--rust); color: #fff; font-family: 'Fredoka One', cursive; font-size: 13px; letter-spacing: 1px; padding: 8px 18px; border-radius: 50px; border: none; cursor: pointer; box-shadow: 0 3px 0 #b33d1c; opacity: 0; transition: opacity 0.3s; z-index: 500; }
+.replay-btn.show { opacity: 1; }
+ 
+.start-screen { position: absolute; inset: 0; z-index: 400; background: var(--cream); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 32px; overflow: hidden; transition: opacity 0.4s ease, transform 0.4s ease; }
+.start-screen.hide { opacity: 0; transform: scale(1.05); pointer-events: none; }
+.start-screen .top-blob { position: absolute; top: 0; left: 0; right: 0; height: 260px; background: var(--yellow); clip-path: ellipse(60% 65% at 50% 0%); }
+.start-screen .bot-blob { position: absolute; bottom: 0; left: 0; right: 0; height: 120px; background: rgba(232,82,42,.08); clip-path: ellipse(70% 80% at 50% 100%); }
+.start-logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 6px 0 var(--rust), 0 14px 28px rgba(232,82,42,.25); position: relative; z-index: 2; animation: adFloat 3s ease-in-out infinite; }
+.start-ttc { font-family: 'Fredoka One', cursive; font-size: 52px; line-height: 1; color: var(--rust); text-align: center; position: relative; z-index: 2; margin-top: 18px; text-shadow: 0 4px 0 #b33d1c; }
+.start-ttc span { color: var(--dark); }
+.start-tagline { font-size: 14px; font-weight: 800; color: rgba(45,42,38,.5); letter-spacing: 1px; position: relative; z-index: 2; margin-top: 6px; text-align: center; }
+.start-badge { background: var(--green); color: #fff; font-size: 11px; font-weight: 900; letter-spacing: 2px; padding: 6px 16px; border-radius: 50px; position: relative; z-index: 2; margin-top: 14px; box-shadow: 0 4px 0 #04a87e; }
+.start-btn { margin-top: 36px; background: var(--rust); color: #fff; font-family: 'Fredoka One', cursive; font-size: 24px; letter-spacing: 1px; padding: 18px 56px; border-radius: 18px; border: none; cursor: pointer; box-shadow: 0 7px 0 #b33d1c, 0 14px 28px rgba(232,82,42,.3); position: relative; z-index: 2; overflow: hidden; animation: btnPulse 1.8s ease infinite; transition: transform 0.1s, box-shadow 0.1s; }
+.start-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent); animation: adShimmer 2s linear infinite; }
+.start-btn:hover  { transform: translateY(-2px); box-shadow: 0 10px 0 #b33d1c, 0 18px 32px rgba(232,82,42,.35); }
+.start-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #b33d1c; }
+.start-note { font-size: 11px; font-weight: 700; color: rgba(45,42,38,.3); letter-spacing: 1px; position: relative; z-index: 2; margin-top: 16px; }
+ 
+@keyframes bounceIn  { 0%{opacity:0;transform:scale(0) rotate(-20deg)} 60%{transform:scale(1.2) rotate(5deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+@keyframes adSlideUp { from{opacity:0;transform:translateY(25px)} to{opacity:1;transform:translateY(0)} }
+@keyframes adFadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes popBounce { 0%{opacity:0;transform:scale(0)} 65%{transform:scale(1.12)} 100%{opacity:1;transform:scale(1)} }
+@keyframes blastIn   { 0%{opacity:0;transform:scale(0.4) rotate(-6deg)} 65%{transform:scale(1.08) rotate(1deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+@keyframes spinIn    { 0%{opacity:0;transform:scale(0) rotate(-360deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+@keyframes burstExpand { 0%{opacity:.4;transform:scale(0) rotate(0)} 100%{opacity:0;transform:scale(3) rotate(30deg)} }
+@keyframes cardBounce  { 0%{opacity:0;transform:translateX(-50px) scale(.95)} 65%{transform:translateX(5px) scale(1.02)} 100%{opacity:1;transform:translateX(0) scale(1)} }
+@keyframes adShimmer   { from{left:-100%} to{left:200%} }
+@keyframes btnPulse    { 0%,100%{box-shadow:0 7px 0 #b33d1c,0 12px 24px rgba(232,82,42,.3)} 50%{box-shadow:0 7px 0 #b33d1c,0 12px 40px rgba(232,82,42,.55)} }
+@keyframes adFloat     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes screenShake { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-5px,3px)} 40%{transform:translate(5px,-3px)} 60%{transform:translate(-4px,4px)} 80%{transform:translate(4px,-2px)} }
+ 
+/* ═══════════════════════════════════
+   QUIZ STYLES
+═══════════════════════════════════ */
+.app { width: 430px; max-width: 95vw; display: none; }
+.screen { display: none; }
+.screen.active { display: block; animation: popIn 0.42s cubic-bezier(.34,1.56,.64,1) forwards; }
+@keyframes popIn { from { opacity: 0; transform: scale(0.92) translateY(18px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.card { background: var(--white); border: 3px solid var(--dark); border-radius: 24px; padding: 32px 28px; box-shadow: 8px 8px 0px var(--dark); text-align: center; position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, var(--blue), var(--pink), var(--orange), var(--lime)); }
+.logo { width: 72px; height: 72px; object-fit: contain; border-radius: 50%; border: 3px solid var(--dark); box-shadow: 3px 3px 0 var(--dark); margin-bottom: 14px; display: block; margin-left: auto; margin-right: auto; }
+.chip { display: inline-block; background: var(--lime); color: var(--dark); font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; border: 2px solid var(--dark); box-shadow: 2px 2px 0 var(--dark); margin-bottom: 14px; }
+h2 { font-family: 'Righteous', cursive; font-size: 28px; color: var(--dark); line-height: 1.2; margin-bottom: 8px; }
+p.sub { font-size: 14px; color: var(--grey); font-weight: 500; margin-bottom: 20px; }
+.input-field { width: 100%; padding: 13px 16px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; color: var(--dark); background: var(--off); border: 2.5px solid var(--dark); border-radius: 14px; outline: none; box-shadow: 3px 3px 0 var(--dark); transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; margin-bottom: 18px; }
+.input-field:focus { box-shadow: 3px 3px 0 var(--blue); border-color: var(--blue); transform: translate(-1px,-1px); }
+.btn { display: inline-block; width: 100%; padding: 14px 22px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 800; border: 2.5px solid var(--dark); border-radius: 14px; cursor: pointer; text-align: center; text-decoration: none; letter-spacing: 0.3px; transition: transform 0.12s, box-shadow 0.12s; box-shadow: 4px 4px 0 var(--dark); margin-top: 10px; }
+.btn:hover  { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--dark); }
+.btn:active { transform: translate(2px,2px);   box-shadow: 2px 2px 0 var(--dark); }
+.btn-blue   { background: var(--blue);  color: white; }
+.btn-lime   { background: var(--lime);  color: var(--dark); }
+.btn-pink   { background: var(--pink);  color: white; position: relative; overflow: hidden; }
+.btn-green  { background: var(--green); color: white; }
+.btn-ghost  { background: transparent; color: var(--grey); border-color: var(--light); box-shadow: 4px 4px 0 var(--light); }
+.btn-ghost:hover { border-color: var(--dark); color: var(--dark); box-shadow: 4px 4px 0 var(--dark); }
+.info-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 16px 0 22px; }
+.info-pill { background: var(--off); border: 2px solid var(--dark); border-radius: 50px; padding: 5px 14px; font-size: 12px; font-weight: 700; color: var(--dark); box-shadow: 2px 2px 0 var(--dark); }
+.progress-wrap { margin-bottom: 22px; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--dark); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+.progress-track { height: 10px; background: var(--light); border-radius: 50px; border: 2px solid var(--dark); overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--pink)); border-radius: 50px; width: 0%; transition: width 0.5s cubic-bezier(.34,1.2,.64,1); }
+.question-text { font-family: 'Righteous', cursive; font-size: 17px; color: var(--dark); line-height: 1.5; margin-bottom: 20px; min-height: 60px; text-align: left; }
+.options-grid { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.option { display: flex; align-items: center; gap: 12px; padding: 13px 16px; background: var(--white); border: 2.5px solid var(--dark); border-radius: 14px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--dark); box-shadow: 3px 3px 0 var(--dark); line-height: 1.4; transition: transform 0.12s, box-shadow 0.12s, background 0.15s, border-color 0.15s; animation: slideIn 0.3s cubic-bezier(.34,1.3,.64,1) backwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
+.option:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--blue); border-color: var(--blue); background: #F0F3FF; }
+.option-letter { width: 30px; height: 30px; border-radius: 9px; background: var(--off); border: 2px solid var(--dark); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; font-family: 'Righteous', cursive; transition: background 0.15s, border-color 0.15s; }
+.option.correct { background: #EAFFDA; border-color: #3DB838; box-shadow: 3px 3px 0 #3DB838; transform: none; }
+.option.correct .option-letter { background: #3DB838; border-color: #3DB838; color: white; }
+.option.wrong { background: #FFEAEA; border-color: var(--pink); box-shadow: 3px 3px 0 var(--pink); transform: none; }
+.option.wrong .option-letter { background: var(--pink); border-color: var(--pink); color: white; }
+.expl-box { display: none; margin-top: 16px; background: #FFFBE6; border: 2.5px solid var(--orange); border-radius: 14px; padding: 13px 16px; font-size: 13px; font-weight: 600; color: #6B4500; text-align: left; line-height: 1.6; box-shadow: 3px 3px 0 var(--orange); }
+.expl-box.show { display: block; animation: popIn 0.3s cubic-bezier(.34,1.3,.64,1); }
+.expl-tag { font-family: 'Righteous', cursive; color: var(--orange); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.score-block { margin: 10px 0 18px; }
+.score-number { font-family: 'Righteous', cursive; font-size: 76px; color: var(--blue); line-height: 1; text-shadow: 4px 4px 0 var(--dark); }
+.score-denom { font-size: 20px; font-weight: 800; color: var(--grey); }
+.score-pct { display: inline-block; margin-top: 6px; font-size: 13px; font-weight: 800; padding: 4px 16px; border-radius: 50px; border: 2px solid var(--dark); box-shadow: 2px 2px 0 var(--dark); }
+.fb-box { background: var(--off); border: 2.5px solid var(--dark); border-radius: 16px; padding: 16px; margin: 14px 0; box-shadow: 4px 4px 0 var(--dark); text-align: left; }
+.fb-box .fb-emoji { font-size: 28px; margin-bottom: 6px; display: block; }
+.fb-box strong { font-family: 'Righteous', cursive; font-size: 18px; color: var(--dark); display: block; margin-bottom: 4px; }
+.fb-box p { font-size: 13px; color: var(--grey); margin: 0; font-weight: 600; line-height: 1.5; }
+.divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: var(--grey); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 2px; background: var(--light); border-radius: 2px; }
+.rev-head { margin-bottom: 16px; }
+.rev-head .r-emoji { font-size: 28px; margin-bottom: 8px; }
+.rev-head h3 { font-family: 'Righteous', cursive; font-size: 22px; color: var(--dark); margin-bottom: 4px; }
+.rev-head p { font-size: 12px; font-weight: 600; color: var(--grey); }
+.sburst { position: absolute; font-size: 14px; pointer-events: none; animation: burstAnim 750ms forwards; }
+@keyframes burstAnim { 0%{opacity:1;transform:translate(0,0) scale(1.3) rotate(0deg)} 100%{opacity:0;transform:translate(var(--bx),var(--by)) scale(0) rotate(180deg)} }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+ 
+<div id="adOverlay">
+  <div class="stage" id="stage">
+    <div class="start-screen" id="startScreen">
+      <div class="top-blob"></div><div class="bot-blob"></div>
+      <img class="start-logo" src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" alt="TTC">
+      <div class="start-ttc">TTC <span>QUIZ</span></div>
+      <div class="start-tagline">Tushar Tuition Classes · Wardha</div>
+      <div class="start-badge">✅ Version 2.0 — Updated</div>
+      <button class="start-btn" id="startBtn">🚀 Start Now!</button>
+      <div class="start-note">🔊 Turn on sound for best experience</div>
+    </div>
+    <div class="scene-dots" id="sceneDots" style="opacity:0;transition:opacity 0.4s;"><div class="sdot on" id="d0"></div><div class="sdot" id="d1"></div><div class="sdot" id="d2"></div><div class="sdot" id="d3"></div><div class="sdot" id="d4"></div></div>
+    <canvas id="particles"></canvas>
+    <div class="scene s0" id="s0"><div class="dots-bg"></div><div class="hey-emoji">🎉</div><div class="hey-text">HEY!</div><div class="hey-sub">Something awesome just dropped!</div><div class="pill-row"><div class="pill">✨ New</div><div class="pill">🆓 Free</div><div class="pill">⚡ Updated</div></div></div>
+    <div class="scene s1" id="s1"><div class="cd-ring"><div class="cd-ring-inner"><div class="cd-num" id="cdNum">3</div></div></div><div class="cd-label">GET READY!</div></div>
+    <div class="scene s2" id="s2"><div class="burst-bg"></div><div class="logo-ring"><img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" alt="TTC"></div><div class="big-ttc">TTC</div><div class="big-quiz">QUIZ</div><div class="v2-tag">✅ VERSION 2.0 — UPDATED</div></div>
+    <div class="scene s3" id="s3"><div class="feat-title">✨ What's Inside?</div><div class="feat-list"><div class="fcard c1"><div class="ficon">📖</div><div class="finfo"><div class="flabel">Subject</div><div class="fval">Physics</div></div></div><div class="fcard c2"><div class="ficon">🎯</div><div class="finfo"><div class="flabel">Challenge</div><div class="fval">40 Questions</div></div><div class="fbadge new">NEW</div></div><div class="fcard c3"><div class="ficon">💡</div><div class="finfo"><div class="flabel">Mode</div><div class="fval">Instant Explanations</div></div><div class="fbadge v2">V2</div></div><div class="fcard c4"><div class="ficon">📤</div><div class="finfo"><div class="flabel">Share</div><div class="fval">WhatsApp Your Score!</div></div></div></div></div>
+    <div class="scene s4" id="s4"><div class="confetti-bg"></div><div class="zigzag"></div><div class="zigzag-bot"></div><div class="update-badge">🚀 BIG UPDATE</div><div class="update-headline">BIGGER<br>&amp; BETTER!</div><div class="update-items"><div class="uitem"><div class="uicon">⚡</div><div class="utxt">Faster &amp; smoother than ever</div></div><div class="uitem"><div class="uicon">🏆</div><div class="utxt">Scored + full explanations</div></div><div class="uitem"><div class="uicon">💬</div><div class="utxt">Share results on WhatsApp</div></div></div></div>
+    <div class="scene s5" id="s5"><div class="top-wave"></div><div class="stars-row"><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span></div><div class="cta-logo-wrap"><img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" alt="TTC"></div><div class="cta-main-title">TTC <span>QUIZ</span></div><div class="cta-subtitle">is here! 🎉</div><div class="tag-row"><div class="tag t1">Free</div><div class="tag t2">Instant</div><div class="tag t3">Fun!</div></div><button class="play-btn" onclick="launchQuiz()">▶ Play Now!</button><div class="cta-tagline">Tushar Tuition Classes · Wardha</div></div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    <button class="replay-btn" id="replayBtn" onclick="startAd()">↺ Replay</button>
+  </div>
+</div>
+ 
+<div class="app" id="quizApp">
+  <div id="nameScreen" class="screen active">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="chip">✦ TTC Wardha</div>
+      <h2>Hey there!<br>What's your name?</h2>
+      <p class="sub">Enter your name to start the quiz 🎯</p>
+      <input id="username" class="input-field" type="text" placeholder="Your full name..." autocomplete="off">
+      <button class="btn btn-blue" onclick="startWelcome()">Continue →</button>
+    </div>
+  </div>
+  <div id="welcomeScreen" class="screen">
+    <div class="card">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="chip">✦ You're up!</div>
+      <h2 id="welcomeText"></h2>
+      <p class="sub">Ready to prove yourself? 💪</p>
+      <div class="info-strip">
+        <div class="info-pill">📖 Physics – Light</div><div class="info-pill">40 Questions</div>
+        <div class="info-pill">🏆 Scored</div><div class="info-pill">⏱ Self-paced</div>
+      </div>
+      <button class="btn btn-blue" onclick="startQuiz()">Start Quiz 🚀</button>
+    </div>
+  </div>
+  <div id="quizScreen" class="screen">
+    <div class="card">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="progress-wrap">
+        <div class="progress-meta"><span id="qCounter">Q 1 / 40</span><span id="qScore">Score: 0</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+      </div>
+      <p class="question-text" id="question"></p>
+      <div class="options-grid" id="options"></div>
+      <div class="expl-box" id="explBox"><span class="expl-tag">💡 Explanation</span><span id="explText"></span></div><br>
+      <button id="nextBtn" class="btn btn-blue hidden" onclick="nextQuestion()">Next Question →</button>
+    </div>
+  </div>
+  <div id="resultScreen" class="screen">
+    <div class="card">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="chip" id="resultChip">✦ Quiz Done!</div>
+      <div class="score-block">
+        <div><span class="score-number" id="scoreNum">0</span><span class="score-denom" id="scoreDenom">/40</span></div>
+        <div class="score-pct" id="scorePct">0%</div>
+      </div>
+      <div class="fb-box"><span class="fb-emoji" id="fbEmoji"></span><strong id="fbTitle"></strong><p id="fbMsg"></p></div>
+      <button class="btn btn-green" onclick="shareWhatsApp()">📤 Share on WhatsApp</button>
+      <button id="ratingBtn" class="btn btn-pink">⭐ Rate Us on Google</button>
+      <button class="btn btn-ghost" onclick="restartQuiz()">↺ Try Again</button>
+      <div class="divider">What others say</div>
+      <div class="rev-head"><div class="r-emoji">🌟</div><h3>Loved by TTC Families</h3><p>Real reviews from students &amp; parents across Wardha</p></div>
+      <a href="https://g.page/r/CdUkswJ0ZulAEBE/review" target="_blank" class="btn btn-lime" style="display:block;text-align:center;">✍️ Give Us a Review</a>
+      <div style="margin-top:20px;">
+        <div class="famewall-embed" data-src="https---maps-app-goo-gl-CCkEWRVgjbvHpQmLA" data-format="grid" style="width:100%;min-height:300px;"></div>
+        <script type="text/javascript" src="https://embed.famewall.io/frame.js" defer></script>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<script>
+/* ════════════════════════
+   AD ENGINE
+════════════════════════ */
+let audioCtx=null;function ac(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
+function tone(f,t,d,v=0.25,dl=0){const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type=t;o.frequency.setValueAtTime(f,c.currentTime+dl);g.gain.setValueAtTime(v,c.currentTime+dl);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dl+d);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d);}
+function noise(d,v=0.1,dl=0){const c=ac(),b=c.createBuffer(1,c.sampleRate*d,c.sampleRate),dt=b.getChannelData(0);for(let i=0;i<dt.length;i++)dt[i]=Math.random()*2-1;const s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.connect(g);g.connect(c.destination);g.gain.setValueAtTime(v,c.currentTime+dl);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dl+d);s.start(c.currentTime+dl);}
+function sndHey(){tone(880,'sine',0.15,0.3);tone(1100,'sine',0.12,0.2,0.15);noise(0.08,0.06);}function sndBeep(n){tone([0,1200,900,660][n]||880,'square',0.1,0.3);noise(0.04,0.04);}function sndBlast(){tone(100,'sawtooth',0.35,0.35);tone(200,'sawtooth',0.25,0.25,0.03);noise(0.2,0.18);}function sndWhoosh(){const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(1000,c.currentTime);o.frequency.exponentialRampToValueAtTime(100,c.currentTime+0.3);g.gain.setValueAtTime(0.2,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.3);o.start();o.stop(c.currentTime+0.3);}function sndTick(){tone(1400,'square',0.04,0.2);}function sndVictory(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,'sine',0.2,0.22,i*0.09));noise(0.12,0.04,0.3);}function sndPop(){tone(600,'sine',0.08,0.25);tone(900,'sine',0.06,0.2,0.06);}
+const cvs=document.getElementById('particles'),cx=cvs.getContext('2d');cvs.width=360;cvs.height=640;let pts=[];const FC=['#E8522A','#FFD93D','#4CC9F0','#06D6A0','#FF6B9D','#A78BFA','#fff'];function burst(x,y,n=70,cl=FC){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=3+Math.random()*9;pts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-4,life:1,decay:0.018+Math.random()*0.025,size:4+Math.random()*7,color:cl[Math.floor(Math.random()*cl.length)],shape:Math.random()>.4?'rect':'circle',rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*0.3});}}function confettiRain(n=80,dl=0){setTimeout(()=>{for(let i=0;i<n;i++){pts.push({x:Math.random()*370,y:-10-Math.random()*60,vx:(Math.random()-.5)*2.5,vy:3+Math.random()*5,life:1,decay:0.006+Math.random()*0.008,size:6+Math.random()*8,color:FC[Math.floor(Math.random()*FC.length)],shape:Math.random()>.4?'rect':'circle',rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*0.15,wobble:Math.random()*Math.PI*2,wobbleSpeed:0.05+Math.random()*0.05});}},dl);}function sparks(x,y){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*5;pts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,decay:0.06,size:2+Math.random()*3,color:'#FFD93D',shape:'circle',rot:0,rotV:0});}}function tickPts(){cx.clearRect(0,0,360,640);pts=pts.filter(p=>p.life>0);pts.forEach(p=>{if(p.wobble!==undefined){p.wobble+=p.wobbleSpeed;p.vx+=Math.sin(p.wobble)*0.08;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.vx*=0.97;p.life-=p.decay;p.rot+=p.rotV;cx.save();cx.globalAlpha=Math.max(0,p.life);cx.fillStyle=p.color;if(p.shape==='rect'){cx.translate(p.x,p.y);cx.rotate(p.rot);cx.fillRect(-p.size/2,-p.size/2,p.size,p.size);}else{cx.beginPath();cx.arc(p.x,p.y,p.size/2,0,Math.PI*2);cx.fill();}cx.restore();});requestAnimationFrame(tickPts);}tickPts();
+const TS=6,DR=[1500,1300,1800,2600,2200,4000],TD=DR.reduce((a,b)=>a+b,0);let cr=0,mT=null,cI=null,pR=null,pT=null,go=false;const sE=document.getElementById('stage'),pF=document.getElementById('progFill'),rB=document.getElementById('replayBtn');
+function shake(){sE.style.animation='screenShake 0.25s ease';setTimeout(()=>sE.style.animation='',280);}function setDot(n){for(let i=0;i<TS-1;i++){const d=document.getElementById('d'+i);if(d)d.classList.toggle('on',i===n);}}
+function goScene(n){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));const s=document.getElementById('s'+n);if(s){void s.offsetWidth;s.classList.add('active');}setDot(n);if(n===0)sndHey();if(n===1){sndBeep(3);runCountdown();}if(n===2){sndBlast();shake();burst(180,320,90);setTimeout(sndPop,350);}if(n===3){sndWhoosh();[150,300,450,600].forEach(d=>setTimeout(sndTick,d));}if(n===4){shake();sndPop();setTimeout(sndPop,120);burst(180,220,60,['#fff','#FFD93D','rgba(255,255,255,.6)']);}if(n===5){sndVictory();confettiRain(55);burst(60,200,50);burst(300,150,50);}}
+let cN=3;function runCountdown(){clearInterval(cI);cN=3;const el=document.getElementById('cdNum');el.textContent=3;sparks(180,300);cI=setInterval(()=>{cN--;if(cN<=0){clearInterval(cI);el.textContent=1;sndBeep(1);return;}el.textContent=cN;sndBeep(cN);sparks(180,300);el.style.animation='';void el.offsetWidth;},400);}
+function schedNext(){if(!go)return;mT=setTimeout(()=>{cr++;if(cr<TS){goScene(cr);schedNext();}else{go=false;rB.classList.add('show');}},DR[cr]);}
+function animProg(){pT=performance.now();function step(n){const p=Math.min(((n-pT)/TD)*100,100);pF.style.width=p+'%';if(p<100&&go)pR=requestAnimationFrame(step);}pR=requestAnimationFrame(step);}
+function startAd(){cr=0;go=true;clearTimeout(mT);clearInterval(cI);cancelAnimationFrame(pR);pF.style.width='0%';rB.classList.remove('show');goScene(0);schedNext();animProg();}
+function launchQuiz(){document.getElementById('adOverlay').style.opacity='0';setTimeout(()=>{document.getElementById('adOverlay').style.display='none';document.getElementById('quizApp').style.display='block';const sv=localStorage.getItem('ttc_name');if(sv)document.getElementById('username').value=sv;},600);}
+document.getElementById('startBtn').addEventListener('click',()=>{document.getElementById('startScreen').classList.add('hide');setTimeout(()=>{document.getElementById('startScreen').style.display='none';document.getElementById('sceneDots').style.opacity='1';},400);startAd();});
+ 
+/* ════════════════════════
+   QUIZ DATA
+════════════════════════ */
+const subjectName="Physics", chapterName="Light";
+const quizData=[
+  {question:"What is the full form of TTC?",options:["The Tuition Centre","Teacher Training Course","Tushar Tuition Classes","Total Tuition Concepts"],correct:"Tushar Tuition Classes",explanation:"As per the specific requirement, TTC stands for Tushar Tuition Classes."},
+  {question:"Which of the following statements best describes the laws of reflection?",options:["They are applicable only to plane mirrors.","They are applicable to all reflecting surfaces, including spherical ones.","The angle of incidence is equal to the angle of reflection.","They are valid only for smooth and polished plane surfaces."],correct:"They are applicable to all reflecting surfaces, including spherical ones.",explanation:"The laws of reflection state that the angle of incidence equals the angle of reflection, and the incident ray, reflected ray, and normal all lie in the same plane. This holds true for all reflecting surfaces, including spherical mirrors."},
+  {question:"A spherical mirror whose reflecting surface is curved outwards (bulge) is known as:",options:["Convex mirror","Concave mirror","Plane mirror","Plano-concave mirror"],correct:"Convex mirror",explanation:"A spherical mirror with an outward-curving reflecting surface is called a convex mirror, whereas an inward-curving one is a concave mirror."},
+  {question:"What is the relation between the radius of curvature (R) and the focal length (f) of a spherical mirror with a small aperture?",options:["R = f / 2","R = f","R = 2f","R = 3f"],correct:"R = 2f",explanation:"For spherical mirrors with small apertures, the radius of curvature is found to be equal to twice the focal length, meaning the principal focus lies midway between the pole and the centre of curvature."},
+  {question:"When an object is placed at the centre of curvature of a concave mirror, the image formed is:",options:["Virtual, erect, and magnified","Real, inverted, and of the same size","Real, inverted, and highly diminished","Real, erect, and magnified"],correct:"Real, inverted, and of the same size",explanation:"For a concave mirror, placing the object exactly at the centre of curvature (C) results in a real and inverted image formed at C, with a size identical to that of the object."},
+  {question:"Which type of mirror is generally preferred as a rear-view mirror in vehicles?",options:["Concave mirror","Plane mirror","Convex mirror","Cylindrical mirror"],correct:"Convex mirror",explanation:"Convex mirrors are used as rear-view mirrors because they always provide an erect, though diminished, image, thereby giving the driver a wider field of view of the traffic behind."},
+  {question:"An object is placed at a distance of 15 cm from a concave mirror of focal length 20 cm. The nature of the image formed will be:",options:["Real and inverted","Virtual and erect","Real and magnified","Virtual and diminished"],correct:"Virtual and erect",explanation:"The focal length is 20 cm, and the object distance is 15 cm. Since the object is placed between the pole and the principal focus, the concave mirror forms a virtual, erect, and magnified image."},
+  {question:"If the magnification produced by a spherical mirror is -3, what does this indicate about the image?",options:["The image is virtual, erect, and diminished.","The image is real, inverted, and magnified three times.","The image is real, erect, and magnified three times.","The image is virtual, inverted, and diminished by one-third."],correct:"The image is real, inverted, and magnified three times.",explanation:"A negative sign in the value of magnification indicates that the image is real and inverted. A magnitude greater than 1 (which is 3 here) signifies that the image is magnified three times."},
+  {question:"According to the New Cartesian Sign Convention, the focal length of a convex mirror is:",options:["Always negative","Always positive","Dependent on the object distance","Zero"],correct:"Always positive",explanation:"In the New Cartesian Sign Convention, the principal focus of a convex mirror lies behind the mirror, which is measured along the positive x-axis. Thus, its focal length is always positive."},
+  {question:"A concave mirror produces an image of magnification -1 on a screen placed at a distance of 40 cm from the mirror. What is the focal length of this mirror?",options:["20 cm","-20 cm","40 cm","-40 cm"],correct:"-20 cm",explanation:"Magnification of -1 means the object is at the centre of curvature, so the image distance is equal to the object distance. Both are at -40 cm. The radius of curvature is -40 cm, making the focal length half of that, which is -20 cm."},
+  {question:"Which optical phenomenon is responsible for a pencil appearing bent when partially immersed in water?",options:["Reflection","Dispersion","Refraction","Total internal reflection"],correct:"Refraction",explanation:"The apparent bending of a pencil at the air-water interface is due to refraction, which is the change in the direction of light as it travels obliquely from one transparent medium to another with a different optical density."},
+  {question:"Which of the following accurately describes Snell's law?",options:["The ratio of the angle of incidence to the angle of refraction is constant.","The product of the sine of the angle of incidence and the sine of the angle of refraction is constant.","The ratio of the sine of the angle of incidence to the sine of the angle of refraction is constant for a given pair of media.","The angle of incidence is always equal to the angle of refraction in any medium."],correct:"The ratio of the sine of the angle of incidence to the sine of the angle of refraction is constant for a given pair of media.",explanation:"Snell's law of refraction states that for light of a given color and for a given pair of media, the ratio of the sine of the angle of incidence to the sine of the angle of refraction is a constant."},
+  {question:"The absolute refractive index of a medium is defined as:",options:["The ratio of the speed of light in the medium to the speed of light in vacuum.","The ratio of the speed of light in vacuum to the speed of light in the medium.","The product of the speed of light in vacuum and the speed of light in the medium.","The ratio of the speed of light in water to the speed of light in the medium."],correct:"The ratio of the speed of light in vacuum to the speed of light in the medium.",explanation:"The absolute refractive index of a medium is the ratio of the speed of light in a vacuum (or air) to the speed of light in that specific medium."},
+  {question:"If the refractive index of diamond is 2.42, what does this imply?",options:["Light travels 2.42 times faster in diamond than in vacuum.","The speed of light in vacuum is 2.42 times the speed of light in diamond.","Diamond has a lower optical density than air.","The critical angle for diamond is 2.42 degrees."],correct:"The speed of light in vacuum is 2.42 times the speed of light in diamond.",explanation:"A refractive index of 2.42 means that the ratio of the speed of light in vacuum to the speed of light in diamond is 2.42, indicating light travels significantly slower in diamond."},
+  {question:"When light travels obliquely from an optically rarer medium to an optically denser medium, it:",options:["Bends away from the normal","Travels along the normal without bending","Bends towards the normal","Reflects completely back into the rarer medium"],correct:"Bends towards the normal",explanation:"Light travelling from an optically rarer medium to an optically denser medium slows down and consequently bends towards the normal line at the point of incidence."},
+  {question:"Which type of lens is generally thicker in the middle and thinner at the edges?",options:["Concave lens","Plano-concave lens","Convex lens","Cylindrical lens"],correct:"Convex lens",explanation:"A convex lens is bounded by two spherical surfaces bulging outwards, making it thicker at the middle compared to its edges. It acts as a converging lens."},
+  {question:"The central point of a spherical lens through which a ray of light passes without suffering any deviation is called:",options:["Principal focus","Centre of curvature","Pole","Optical centre"],correct:"Optical centre",explanation:"The central point of a lens is its optical centre. A ray of light passing through the optical centre of a lens emerges without suffering any angular deviation."},
+  {question:"An object is placed anywhere in front of a concave lens. The image formed will always be:",options:["Real, inverted, and diminished","Virtual, erect, and magnified","Virtual, erect, and diminished","Real, erect, and magnified"],correct:"Virtual, erect, and diminished",explanation:"A concave lens always diverges light rays, producing a virtual, erect, and diminished image regardless of where the object is placed in front of the lens."},
+  {question:"To obtain a real, inverted, and same-sized image using a convex lens, where should the object be placed?",options:["At the principal focus","Between the optical centre and the principal focus","At twice the focal length","Beyond twice the focal length"],correct:"At twice the focal length",explanation:"When an object is placed at twice the focal length (2F) of a convex lens, the image is formed at 2F on the other side, and it is real, inverted, and of the exact same size as the object."},
+  {question:"What is the SI unit of the power of a lens?",options:["Meter","Centimeter","Watt","Dioptre"],correct:"Dioptre",explanation:"The SI unit of power of a lens is Dioptre (denoted by D). One dioptre is the power of a lens whose focal length is exactly one meter."},
+  {question:"If a lens has a power of -2.5 D, what is its focal length and type?",options:["-40 cm, Concave lens","+40 cm, Convex lens","-25 cm, Concave lens","+25 cm, Convex lens"],correct:"-40 cm, Concave lens",explanation:"The negative sign indicates a concave lens. Power = 1 / focal length in meters. Thus, focal length = 1 / -2.5 meters = -0.4 meters, which equals -40 cm."},
+  {question:"A light ray travelling through air enters a rectangular glass slab obliquely. Upon emerging from the opposite parallel face into the air, the emergent ray is:",options:["Perpendicular to the incident ray","Parallel to the incident ray but laterally shifted","Deviated towards the normal","Reflected completely inside the glass"],correct:"Parallel to the incident ray but laterally shifted",explanation:"When light passes through a rectangular glass slab with parallel opposite faces, the extent of bending at both interfaces is equal and opposite. Thus, the emergent ray is parallel to the incident ray but slightly shifted sideways (lateral shift)."},
+  {question:"Dentists use a specific type of mirror to examine a patient's teeth because it can form an erect and magnified image when held close. Which mirror is this?",options:["Plane mirror","Convex mirror","Concave mirror","Parabolic mirror"],correct:"Concave mirror",explanation:"Dentists use concave mirrors. When the mirror is held close to the teeth (object within the focal length), it produces a virtual, erect, and highly magnified image, allowing for detailed examination."},
+  {question:"Case Study: A student places an object 10 cm in front of a mirror and observes that the image is erect and exactly half the size of the object. What is the nature of the optical device?",options:["Concave mirror","Plane mirror","Convex lens","Convex mirror"],correct:"Convex mirror",explanation:"The image is erect and diminished (half the size). A plane mirror forms same-sized images, and a concave mirror forms magnified erect images. Only a convex mirror always forms virtual, erect, and diminished images."},
+  {question:"In the New Cartesian Sign Convention, distances measured in the direction of the incident light are taken as:",options:["Negative","Positive","Zero","Dependent on the height of the object"],correct:"Positive",explanation:"Distances measured in the same direction as the incident light (along the positive x-axis) are taken as positive, while those opposite to the incident light are negative."},
+  {question:"The ratio of the height of the image to the height of the object for a lens is known as:",options:["Optical density","Refractive index","Magnification","Power"],correct:"Magnification",explanation:"Magnification is defined as the ratio of the height of the image to the height of the object. It indicates how many times the image is larger or smaller than the object."},
+  {question:"Which of the following materials has the highest absolute refractive index according to the NCERT data?",options:["Water","Crown glass","Diamond","Ruby"],correct:"Diamond",explanation:"Diamond has the highest absolute refractive index, which is 2.42. This makes it an extremely optically dense medium, causing light to travel very slowly through it."},
+  {question:"A candle is placed 30 cm from a convex lens of focal length 15 cm. Where will the image be formed?",options:["15 cm on the same side","30 cm on the other side","15 cm on the other side","At infinity"],correct:"30 cm on the other side",explanation:"The focal length is 15 cm, and the object is at 30 cm, which is exactly at 2F. Therefore, the image will be formed at 2F on the other side, which is 30 cm away."},
+  {question:"The speed of light in a vacuum is 300,000 km/s. If the absolute refractive index of glass is 1.5, what is the speed of light in glass?",options:["150,000 km/s","200,000 km/s","450,000 km/s","300,000 km/s"],correct:"200,000 km/s",explanation:"The speed of light in a medium is calculated by dividing the speed of light in vacuum by the refractive index. 300,000 / 1.5 = 200,000 km/s."},
+  {question:"Which part of the human eye acts as a light-sensitive screen where the image is formed?",options:["Cornea","Pupil","Retina","Ciliary muscles"],correct:"Retina",explanation:"The lens system of the human eye forms an image on a light-sensitive screen located at the back of the eye, which is called the retina."},
+  {question:"What happens to a ray of light that passes through the principal focus of a concave mirror?",options:["It reflects back along the same path.","It emerges parallel to the principal axis after reflection.","It passes through the pole making the same angle.","It gets absorbed by the mirror."],correct:"It emerges parallel to the principal axis after reflection.",explanation:"According to the rules for ray diagrams, a ray passing through the principal focus of a concave mirror becomes parallel to the principal axis after reflection."},
+  {question:"Two lenses of power +3.0 D and -1.0 D are placed in contact. What is the combined focal length of this lens system?",options:["+50 cm","+2.0 cm","-50 cm","-2.0 cm"],correct:"+50 cm",explanation:"The net power of the combination is P = P1 + P2 = 3.0 - 1.0 = +2.0 D. The focal length is 1 / P = 1 / 2.0 meters = 0.5 meters = +50 cm."},
+  {question:"If the magnification produced by a lens has a positive value, what does it signify regarding the nature of the image?",options:["The image is real and inverted.","The image is real and erect.","The image is virtual and erect.","The image is virtual and inverted."],correct:"The image is virtual and erect.",explanation:"A positive sign in the value of magnification indicates that the image height has the same sign as the object height, meaning the image is virtual and erect."},
+  {question:"In solar furnaces, which property of concave mirrors is utilized?",options:["Their ability to form diminished images.","Their ability to converge parallel sun rays to a single focal point to produce intense heat.","Their ability to diverge light over a wide area.","Their ability to form virtual images."],correct:"Their ability to converge parallel sun rays to a single focal point to produce intense heat.",explanation:"Large concave mirrors are used in solar furnaces because they can converge parallel incoming sunlight to a specific focal point, concentrating the heat energy significantly."},
+  {question:"Case Study: A student observes that a spherical mirror produces a virtual, erect, and highly magnified image of her face. She also notes the mirror has a large focal length. What kind of mirror is she looking into, and where is her face positioned?",options:["Convex mirror, placed beyond the centre of curvature.","Concave mirror, placed between the pole and the principal focus.","Plane mirror, placed very close.","Concave mirror, placed exactly at the focus."],correct:"Concave mirror, placed between the pole and the principal focus.",explanation:"A concave mirror forms a virtual, erect, and magnified image only when the object (in this case, her face) is located between its pole and its principal focus."},
+  {question:"Which formula correctly relates the object distance (u), image distance (v), and focal length (f) for a spherical lens?",options:["1/v + 1/u = 1/f","1/v - 1/u = 1/f","1/u - 1/v = 1/f","v + u = f"],correct:"1/v - 1/u = 1/f",explanation:"The correct lens formula that establishes the relationship between the object distance, image distance, and focal length is 1/v - 1/u = 1/f."},
+  {question:"For an object placed at infinity, a convex lens forms an image at:",options:["The optical centre","Twice the focal length","The principal focus on the other side","Infinity on the other side"],correct:"The principal focus on the other side",explanation:"When an object is placed at infinity, the parallel rays of light converge at the principal focus on the opposite side of a convex lens, forming a highly diminished, real, and inverted image."},
+  {question:"A ray of light incident obliquely to the principal axis towards the pole of a convex mirror is reflected:",options:["Parallel to the principal axis","Obliquely, making an equal angle with the principal axis","Back along its original path","Through the principal focus"],correct:"Obliquely, making an equal angle with the principal axis",explanation:"A ray incident obliquely at the pole of either a concave or a convex mirror reflects obliquely following the laws of reflection, meaning the angle of incidence equals the angle of reflection."},
+  {question:"If the refractive index of water is 1.33 and that of alcohol is 1.36, which statement is true?",options:["Water is optically denser than alcohol.","Light travels faster in alcohol than in water.","Alcohol is optically denser than water.","Light travels at the same speed in both media."],correct:"Alcohol is optically denser than water.",explanation:"A higher refractive index means higher optical density. Since alcohol's refractive index (1.36) is greater than water's (1.33), alcohol is optically denser, and light travels slower in it compared to water."},
+  {question:"What happens to the focal length of a spherical mirror if it is immersed in water?",options:["It increases.","It decreases.","It remains unchanged.","It becomes zero."],correct:"It remains unchanged.",explanation:"The focal length of a spherical mirror depends only on its radius of curvature (R = 2f) and its geometric shape. It does not depend on the refractive index of the surrounding medium, so it remains unchanged when immersed in water."}
+];
+ 
+let username='', questions=[], qIndex=0, score=0;
+const letters=["A","B","C","D"];
+ 
+/* ════════════════════════
+   TRACKING ENGINE
+════════════════════════ */
+ 
+// 🚨 PASTE YOUR EXACT WEB APP URL HERE 🚨
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzrJ7T76IeXnPwbqTqV8Mksc7JRnbaVBgbUXVeX1fBXLWtdxS6XOgr4wC0_LqILaGj/exec';
+ 
+let tabSwitches=0, wrongAnswers=[], quizStartTime=0;
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && qIndex > 0 && qIndex < (questions.length || 999)) tabSwitches++; });
+ 
+try { const sv = localStorage.getItem("ttc_name")||""; if(sv) document.getElementById("username").value=sv; } catch(e) {}
+document.getElementById("username").addEventListener("keydown",e=>{ if(e.key==="Enter") startWelcome(); });
+ 
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+function showScreen(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); const el=document.getElementById(id); el.classList.remove("active"); void el.offsetWidth; el.classList.add("active"); }
+function startWelcome(){
+  username=document.getElementById("username").value.trim();
+  if(!username){ const inp=document.getElementById("username"); inp.style.borderColor="var(--pink)"; inp.style.boxShadow="3px 3px 0 var(--pink)"; inp.placeholder="Please enter your name! 👆"; inp.focus(); return; }
+  try { localStorage.setItem("ttc_name",username); } catch(e) {}
+  document.getElementById("welcomeText").innerText="Let's go, "+username+"!";
+  showScreen("welcomeScreen");
+}
+function startQuiz(){ questions=shuffle(quizData); qIndex=0; score=0; wrongAnswers=[]; tabSwitches=0; quizStartTime=Date.now(); showScreen("quizScreen"); loadQuestion(); }
+function loadQuestion(){
+  const q=questions[qIndex], opts=shuffle([...q.options]);
+  document.getElementById("qCounter").innerText=`Q ${qIndex+1} / ${questions.length}`; document.getElementById("qScore").innerText=`Score: ${score}`;
+  document.getElementById("progressBar").style.width=((qIndex/questions.length)*100)+"%"; document.getElementById("question").innerText=q.question;
+  const container=document.getElementById("options"); container.innerHTML="";
+  opts.forEach((opt,i)=>{ const div=document.createElement("div"); div.className="option"; div.innerHTML=`<span class="option-letter">${letters[i]}</span><span class="opt-text">${opt}</span>`; div.onclick=()=>selectOption(div,opt,q); container.appendChild(div); });
+  document.getElementById("explBox").classList.remove("show"); document.getElementById("explText").innerText=""; document.getElementById("nextBtn").classList.add("hidden");
+}
+function selectOption(el,opt,q){
+  document.querySelectorAll(".option").forEach(o=>o.onclick=null);
+  if(opt===q.correct){ el.classList.add("correct"); score++; confetti({particleCount:100,spread:70,origin:{y:0.55},colors:["#4361EE","#C8FF00","#FF3D8A","#FF6B35","#ffffff"]}); } 
+  else { el.classList.add("wrong"); document.querySelectorAll(".option").forEach(o=>{ if(o.querySelector(".opt-text")?.innerText.trim()===q.correct) o.classList.add("correct"); }); wrongAnswers.push({question: q.question, yourAnswer: opt, correct: q.correct}); }
+  document.getElementById("explText").innerText=q.explanation; document.getElementById("explBox").classList.add("show");
+  document.getElementById("qScore").innerText=`Score: ${score}`; document.getElementById("nextBtn").classList.remove("hidden");
+}
+function nextQuestion(){ qIndex++; if(qIndex>=questions.length){ showResult(); return; } loadQuestion(); }
+function showResult(){
+  showScreen("resultScreen");
+  const total=questions.length, pct=Math.round((score/total)*100);
+  document.getElementById("scoreNum").innerText=score; document.getElementById("scoreDenom").innerText=`/${total}`; document.getElementById("scorePct").innerText=pct+"%";
+  let emoji,title,msg,chipText,pctBg;
+  if(pct>=90){ emoji="🔥";title="Absolutely Smashed It!";pctBg="#EAFFDA";msg="Perfect! Outstanding performance, "+username+". Top of the class!";chipText="✦ Outstanding"; }
+  else if(pct>=75){ emoji="💪";title="Really Well Done!";pctBg="#E0F0FF";msg="Strong performance, "+username+"! A little more practice and you'll be perfect.";chipText="✦ Well Done"; }
+  else if(pct>=50){ emoji="📚";title="Good Effort!";pctBg="#FFF8DC";msg="You're on the right track, "+username+". Keep revising and you'll ace it!";chipText="✦ Keep Going"; }
+  else { emoji="🧐";title="Time to Revise!";pctBg="#FFEAEA";msg="Don't worry, "+username+" — go through the chapters once more and try again!";chipText="✦ Try Again"; }
+  document.getElementById("fbEmoji").innerText=emoji; document.getElementById("fbTitle").innerText=title; document.getElementById("fbMsg").innerText=msg;
+  document.getElementById("resultChip").innerText=chipText; document.getElementById("scorePct").style.background=pctBg;
+  confetti({particleCount:180,spread:110,origin:{y:0.45},colors:["#4361EE","#C8FF00","#FF3D8A","#FF6B35","#ffffff"]});
+  sendToSheet(total, pct);
+}
+ 
+function sendToSheet(total, pct){
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE' || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT_URL_HERE')) {
+    alert("⚠️ Developer Alert: You forgot to paste your Web App URL into the Quiz code! Score will not save.");
+    return;
+  }
+  let attempt = 1;
+  try {
+    const attemptKey = 'ttc_att_' + subjectName + '_' + chapterName;
+    attempt = parseInt(localStorage.getItem(attemptKey) || '0') + 1;
+    localStorage.setItem(attemptKey, attempt);
+  } catch(e) {}
+  const payload = {
+    name: username,
+    subject: subjectName,
+    chapter: chapterName,
+    score: score,
+    total: total,
+    percentage: pct,
+    timeTaken: Math.round((Date.now() - quizStartTime) / 1000),
+    tabSwitches: tabSwitches,
+    attempt: attempt,
+    wrongAnswers: wrongAnswers,
+    device: navigator.userAgent
+  };
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).catch(()=>{});
+}
+ 
+function shareWhatsApp(){ const msg=`🎓 *TTC Quiz Result*\n\n👤 *Student:* ${username}\n📘 *Subject:* ${subjectName}\n📖 *Chapter:* ${chapterName}\n🏆 *Score:* ${score}/${questions.length}\n\n_Tushar Tuition Classes, Wardha_ 📚`; window.open("https://wa.me/?text="+encodeURIComponent(msg)); }
+function restartQuiz(){ location.reload(); }
+document.getElementById("ratingBtn").addEventListener("click",function(){
+  for(let i=0;i<16;i++){ const s=document.createElement("span"); s.className="sburst"; s.innerText=["★","✦","●","▲"][Math.floor(Math.random()*4)]; s.style.color=["#C8FF00","#FF6B35","#4361EE","#FF3D8A"][Math.floor(Math.random()*4)]; s.style.setProperty("--bx",(Math.random()*160-80)+"px"); s.style.setProperty("--by",(Math.random()*-150)+"px"); s.style.left=(35+Math.random()*30)+"%"; s.style.top="50%"; this.appendChild(s); setTimeout(()=>s.remove(),750); }
+  setTimeout(()=>window.open("https://g.page/r/CdUkswJ0ZulAEBE/review"),320);
+});
+</script>
+</body>
+</html>
